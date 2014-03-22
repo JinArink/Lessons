@@ -3,9 +3,23 @@
     <head>
         <meta charset="utf-8">
         <title>Physics</title>
+        <link rel="stylesheet" href="css/bootstrap/bootstrap.css">
         <link rel="stylesheet" href="css/project.css">
     </head>
-    <body> 
+    <body>
+        
+    <ul class="nav nav-tabs">
+        <li id="tab-editor" class="active"><a href="#editor" data-toggle="tab">Editor</a></li>
+        <li id="tab-player"><a href="#player" data-toggle="tab">Player</a></li>
+    </ul>
+
+<!--  
+<div class="tab-content">
+  <div class="tab-pane active" id="editor">editor</div>
+  <div class="tab-pane" id="player">player</div>
+  
+</div>
+-->
         <canvas id="c"></canvas>
         
         <script src="js/ext/jquery-2.0.3.min.js"></script>
@@ -21,6 +35,7 @@
         <script src="js/ext/physicsjs/behaviors/sweep-prune.js"></script>
         <script src="js/ext/physicsjs/behaviors/newtonian.js"></script>
         <script src="js/ext/physicsjs/renderers/canvas.js"></script>
+        <script src="js/ext/bootstrap.min.js"></script>
         <script src="js/project.js"></script>
     </body>
 </html>
