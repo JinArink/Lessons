@@ -1,14 +1,15 @@
 
 var jQuery, document;
 
-jQuery(document).ready(function ($) {
-    "use strict";
+var Editor = function(w) {
+    var shapes = [];
+    var world = w;
     
     /*
     param list: array to add ball
     */
-    var addCircle = function(list, x, y, r, fixed){
-        list.push(Physics.body('circle', {
+    var addCircle = function(x, y, r, fixed) {
+        var circle = Physics.body('circle', {
             x: x,
             y: y,
             vx: 0.01,
@@ -16,11 +17,13 @@ jQuery(document).ready(function ($) {
             radius: r,
             mass: 0.1 * r,
             fixed: fixed
-        }));
+        });
+        shapes.push(circle);
+        return circle;
     };
     
-    var addPolygon = function(list, x, y, vertices, angle, fixed) {
-     list.push(Physics.body('convex-polygon', {
+    var addPolygon = function( x, y, vertices, angle, fixed) {
+        var polygon = Physics.body('convex-polygon', {
             x: x,
             y: y,
             vx: 0,
@@ -28,10 +31,58 @@ jQuery(document).ready(function ($) {
             vertices: vertices,
             angle: angle,
             fixed: fixed
-        }));
+        });
+        shapes.push(polygon);
+        return polygon;
     };
+    
+    function getBodyAtMouse(x, y) {
+        return world.findOne({ $at: Physics.vector(x, y) });
+    }
+    
+    return {
+        addShape: function(s){ 
+            shapes.push(s);
+        },
+        getShapes: function(){ 
+            return shapes;
+        },
+        handleClick: function(e, offset) {
+            var x = e.pageX - offset.left,
+                y = e.pageY - offset.top;
+            var body = getBodyAtMouse(x, y);
+            console.log(x, y, "body", body);
+            if (body == false) {
+                var circle = addCircle(x, y, 30, false);
+                world.add(circle);
+                world.render();
+            }
+        },
+        test: function() {
+            var c = addCircle(300, 200, 30, false); 
+            var p = addPolygon( 300, 450, [
+                {x: -80, y: 20},
+                {x: 80, y: 20},
+                {x: 80, y: 40},
+                {x: -80, y: 40}
+            ], 0.1 * Math.PI, true);
+            world.add(c);
+            world.add(p);
+            world.render();
+        }
+    }
+};
+
+jQuery(document).ready(function ($) {
+    "use strict";
+    
+    
+    
+    
+    
+    
     var ballSim = function(world, physics) {
-        
+/*
         var shapes = [];
         
         addCircle(shapes, 300, 200, 30, false); 
@@ -53,6 +104,7 @@ jQuery(document).ready(function ($) {
             {x: 80, y: 40},
             {x: -80, y: 40}
         ], -0.1 * Math.PI, true);
+*/
         
         var $win = $(window)
             ,viewWidth = $win.width()
@@ -102,7 +154,7 @@ jQuery(document).ready(function ($) {
         }).trigger('resize');
         
         // add the circle to the world
-        world.add( shapes );
+        //world.add( shapes );
         world.add( edgeBounce );
         world.add( Physics.behavior('body-impulse-response') );
         world.add( Physics.behavior('body-collision-detection') );
@@ -139,20 +191,9 @@ jQuery(document).ready(function ($) {
         
         // subscribe to the ticker
         Physics.util.ticker.subscribe(function(time, dt) {
-            //console.log(balls[0].state);
-            //console.log(balls[0]);
-            //Physics.util.ticker.stop();
             world.step( time );
             // Note: FPS ~= 1/dt
         });
-        // start the ticker
-        Physics.util.ticker.start();
-/*
-        $("#c").on("click", function() {
-            direction = -direction;
-            gravity.setAcceleration({ x: 0, y: direction*0.0004 }); 
-        });
-*/
     };
         
     var world = Physics({
@@ -164,20 +205,29 @@ jQuery(document).ready(function ($) {
         integrator: 'verlet'
     }, ballSim);
     
-    
-    /*
-    // add some gravity
-    var gravity = Physics.behavior('constant-acceleration', {
-        acc: { x : 0, y: 0.0004 } // this is the default
-    });
-    world.add( gravity );
-    */
-    
-    
-
     world.subscribe('step', function(){
         // Note: equivalent to just calling world.render() after world.step()
         world.render();
+    });
+    
+    var editor = new Editor(world);
+    editor.test();
+    
+    $('#tab-editor a').click(function (e) {
+        e.preventDefault();
+        Physics.util.ticker.stop();
+        world.remove( world.getBodies() );
+    });
+    $('#tab-player a').click(function (e) {
+        e.preventDefault();
+        world.add( editor.getShapes() );
+        Physics.util.ticker.start();
+    });
+    $("#c").on("click", function(e) {
+        console.log("click");
+        e.preventDefault();
+        var offset = $(this).offset();
+        editor.handleClick(e, offset);
     });
  
 });
