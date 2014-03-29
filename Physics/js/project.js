@@ -4,6 +4,7 @@ var jQuery, document;
 var Editor = function(w) {
     var shapes = [];
     var world = w;
+    var MIN_SIZE = 10;
     
     /*
     param list: array to add ball
@@ -36,9 +37,24 @@ var Editor = function(w) {
         return polygon;
     };
     
-    function getBodyAtMouse(x, y) {
+    var getBodyAtMouse = function(x, y) {
         return world.findOne({ $at: Physics.vector(x, y) });
-    }
+    };
+    
+    var resizeShape = function(shape, dx, dy) {
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d < MIN_SIZE){
+            d = MIN_SIZE;
+        }
+        shape.geometry.radius = d;
+        shape.view = undefined;
+        world.render();
+    };
+    
+    var moveShape = function(shape, mx, my) {
+        shape.state.pos.set(mx, my);
+        world.render();
+    };
     
     return {
         addShape: function(s){ 
@@ -48,15 +64,34 @@ var Editor = function(w) {
             return shapes;
         },
         handleClick: function(e, offset) {
-            var x = e.pageX - offset.left,
-                y = e.pageY - offset.top;
-            var body = getBodyAtMouse(x, y);
-            console.log(x, y, "body", body);
-            if (body == false) {
-                var circle = addCircle(x, y, 30, false);
-                world.add(circle);
+            var cx = e.pageX - offset.left,
+                cy = e.pageY - offset.top,
+                shape = getBodyAtMouse(cx, cy);
+            if (shape) {
+                cx = shape.options.x;
+                cy = shape.options.y;
+            }
+            if (!shape) {
+                shape = addCircle(cx, cy, MIN_SIZE, false);
+                world.add(shape);
                 world.render();
             }
+            $(document).on("mousemove", function(e) {
+                var mx = e.pageX - offset.left,
+                    my = e.pageY - offset.top,
+                    dx = mx - cx,
+                    dy = my - cy;
+                
+                if (e.which == 3) {
+                    resizeShape(shape, dx, dy);
+                } else {
+                    moveShape(shape, mx, my);
+                }
+            });
+            $(document).on("mouseup", function(e) {
+                $(document).off("mousemove");
+                $(document).off("mouseup");
+            });
         },
         test: function() {
             var c = addCircle(300, 200, 30, false); 
@@ -212,19 +247,19 @@ jQuery(document).ready(function ($) {
     
     var editor = new Editor(world);
     editor.test();
-    
+    document.oncontextmenu = function(e) {
+        e.preventDefault;
+        return false;
+    }
     $('#tab-editor a').click(function (e) {
         e.preventDefault();
         Physics.util.ticker.stop();
-        world.remove( world.getBodies() );
     });
     $('#tab-player a').click(function (e) {
         e.preventDefault();
-        world.add( editor.getShapes() );
         Physics.util.ticker.start();
     });
-    $("#c").on("click", function(e) {
-        console.log("click");
+    $("#c").on("mousedown", function(e) {
         e.preventDefault();
         var offset = $(this).offset();
         editor.handleClick(e, offset);
