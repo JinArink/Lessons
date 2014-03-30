@@ -51,8 +51,10 @@ var Editor = function(w) {
         world.render();
     };
     
-    var moveShape = function(shape, mx, my) {
-        shape.state.pos.set(mx, my);
+    var moveShape = function(shape, x, y) {
+        shape.state.pos.set(x, y);
+        shape.options.x = x;
+        shape.options.y = y;
         world.render();
     };
     
@@ -66,26 +68,36 @@ var Editor = function(w) {
         handleClick: function(e, offset) {
             var cx = e.pageX - offset.left,
                 cy = e.pageY - offset.top,
-                shape = getBodyAtMouse(cx, cy);
-            if (shape) {
-                cx = shape.options.x;
-                cy = shape.options.y;
-            }
+                shape = getBodyAtMouse(cx, cy),
+                mx = e.pageX - offset.left,
+                my = e.pageY - offset.top,
+                relmx,
+                relmy;
+            
             if (!shape) {
                 shape = addCircle(cx, cy, MIN_SIZE, false);
                 world.add(shape);
                 world.render();
             }
+
+            relmx = mx - shape.options.x;
+            relmy = my - shape.options.y;
+            
             $(document).on("mousemove", function(e) {
-                var mx = e.pageX - offset.left,
-                    my = e.pageY - offset.top,
-                    dx = mx - cx,
-                    dy = my - cy;
+                var dx, dy;
+                mx = e.pageX - offset.left;
+                my = e.pageY - offset.top;
                 
                 if (e.which == 3) {
+                    cx = shape.options.x;
+                    cy = shape.options.y;
+                    dx = mx - cx;
+                    dy = my - cy;
                     resizeShape(shape, dx, dy);
                 } else {
-                    moveShape(shape, mx, my);
+                    var x = mx - relmx,
+                        y = my - relmy;
+                    moveShape(shape, x, y);
                 }
             });
             $(document).on("mouseup", function(e) {
